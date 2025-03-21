@@ -7,11 +7,11 @@ RUN npm install -g pnpm
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy only necessary files from the root
-COPY ../../package.json ../../pnpm-lock.yaml ../../pnpm-workspace.yaml ./
+# Copy package.json, pnpm-lock.yaml, and workspace file from root
+COPY --chown=node:node ../../package.json ../../pnpm-lock.yaml ../../pnpm-workspace.yaml ./
 
-# Install dependencies for the monorepo
-RUN pnpm install --frozen-lockfile
+# Install dependencies without lockfile errors
+RUN pnpm install --no-frozen-lockfile
 
 # Copy the backend app files
 COPY . .
@@ -22,7 +22,7 @@ WORKDIR /app/apps/backend
 # Generate Prisma Client inside Docker
 RUN pnpm prisma generate
 
-# Apply database migrations (optional, if using migrations)
+# Apply database migrations (optional)
 RUN pnpm prisma migrate deploy
 
 # Build TypeScript (if applicable)
