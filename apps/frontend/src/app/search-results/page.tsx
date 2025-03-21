@@ -1,4 +1,7 @@
 "use client";
+
+export const dynamic = "force-dynamic"; // This forces dynamic rendering
+
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
@@ -6,6 +9,7 @@ import FlightCard from "@/components/FlightCard";
 import Loader from "@/components/Loader";
 import { useFlight } from "@/context/FlightContext";
 import { saveSearchResult } from "@/lib/indexedDB";
+import { Suspense } from "react";
 
 export default function SearchResultsPage() {
     const searchParams = useSearchParams();

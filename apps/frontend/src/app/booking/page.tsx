@@ -1,8 +1,11 @@
 "use client";
+export const dynamic = "force-dynamic"; // This forces dynamic rendering
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFlight } from "@/context/FlightContext";
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { Suspense } from "react";
 
 export default function BookingPage() {
     const { selectedFlight } = useFlight();

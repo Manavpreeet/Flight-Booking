@@ -1,4 +1,6 @@
 "use client";
+export const dynamic = "force-dynamic"; // This forces dynamic rendering
+
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";

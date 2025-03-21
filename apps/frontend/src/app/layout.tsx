@@ -3,7 +3,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { FlightProvider } from "@/context/FlightContext";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import "./globals.css";
 
 export default function RootLayout({
@@ -34,9 +34,11 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
-                <AuthProvider>
-                    <FlightProvider>{children}</FlightProvider>
-                </AuthProvider>
+                <Suspense fallback={<div>Loading...</div>}>
+                    <AuthProvider>
+                        <FlightProvider>{children}</FlightProvider>
+                    </AuthProvider>
+                </Suspense>
             </body>
         </html>
     );
