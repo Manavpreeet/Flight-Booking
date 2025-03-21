@@ -57,7 +57,12 @@ export const updateFlightStatus = async (req: Request, res: Response) => {
             res.status(400).json({ error: "Invalid flightId" });
             return;
         }
-        let data = null;
+        let data: {
+            id: string;
+            status: string;
+            flight_leg_id: string;
+            updated_at: Date | null;
+        } | null = null;
         if (flightLeg.flight_status_updates.length == 0) {
             data = await prisma.flight_status_updates.create({
                 data: { status: status, flight_leg_id: flightId },
