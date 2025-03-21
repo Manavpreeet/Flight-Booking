@@ -87,7 +87,7 @@ const getConnectingFlights = async (
         },
     });
 
-    const connectingFlights = [];
+    const connectingFlights: { firstLeg: any; secondLeg: any }[] = [];
     for (const firstLeg of firstLegs) {
         for (const secondLeg of secondLegs) {
             connectingFlights.push({

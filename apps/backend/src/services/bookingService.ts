@@ -66,7 +66,7 @@ export const bookFlight = async (
         if (!userData) throw new Error("User not found.");
 
         // Step 2: Reserve Seats
-        const reservedSeats = [];
+        const reservedSeats: string[] = [];
         for (const flight of flights) {
             const seat_id = await reserveSeats(
                 flight.flight_leg_id,
