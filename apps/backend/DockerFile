@@ -1,0 +1,23 @@
+# Use an official Node.js runtime as base
+FROM node:18-alpine
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package.json and lock file first (better for caching)
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Copy the rest of the application
+COPY . .
+
+# Build (if using TypeScript)
+RUN if [ -f "tsconfig.json" ]; then pnpm run build; fi
+
+# Expose the application port (match your Express.js port)
+EXPOSE 5001
+
+# Start the server
+CMD ["pnpm", "start"]
