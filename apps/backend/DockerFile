@@ -8,10 +8,9 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 # Copy only necessary files from the root
-COPY ../../package.json ../../pnpm-lock.yaml ../../pnpm-workspace.yaml ./
+COPY ../../package.json ../../pnpm-workspace.yaml ./
+RUN pnpm install --no-frozen-lockfile
 
-# Install dependencies for the monorepo
-RUN pnpm install --frozen-lockfile
 
 # Copy the backend app files
 COPY . .
