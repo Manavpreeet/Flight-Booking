@@ -22,7 +22,7 @@ WORKDIR /app/apps/backend
 # Generate Prisma Client inside Docker
 RUN pnpm prisma generate
 
-# Apply database migrations (optional, if using migrations)
+# Apply database migrations (if needed)
 RUN pnpm prisma migrate deploy
 
 # Build TypeScript (if applicable)
