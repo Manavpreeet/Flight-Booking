@@ -1,12 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { FiArrowLeft, FiEdit3 } from "react-icons/fi";
+import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 
 export default function Profile() {
     const { user } = useAuth();
     const router = useRouter();
+    const [submitting, setSubmitting] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     const [formData, setFormData] = useState({
         first_name: "",
@@ -28,7 +33,7 @@ export default function Profile() {
         async function fetchUserProfile() {
             if (!user) return router.push("/signup");
 
-            const response = await api.get(`/auth/profile?user_id=${user.id}`);
+            const response = await api.get(`/auth/profile?email=${user.email}`);
             const userData = response.data.user;
 
             setFormData({
@@ -48,22 +53,27 @@ export default function Profile() {
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        validateInput(e.target.name, e.target.value);
+        const { name, value, files } = e.target;
+
+        if (name === "profile_picture" && files?.[0]) {
+            const imageUrl = URL.createObjectURL(files[0]);
+            setFormData((prev) => ({ ...prev, profile_picture: imageUrl }));
+        } else {
+            setFormData((prev) => ({ ...prev, [name]: value }));
+            validateInput(name, value);
+        }
     };
 
     const validateInput = (name: string, value: string) => {
-        let errorMessage = "";
+        let error = "";
 
-        if (name === "card_number") {
-            if (!/^\d{16}$/.test(value)) {
-                errorMessage = "Card number must be 16 digits.";
-            }
+        if (name === "card_number" && !/^\d{16}$/.test(value)) {
+            error = "Card number must be 16 digits.";
         }
 
         if (name === "expiry_date") {
             if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) {
-                errorMessage = "Expiry date must be in MM/YY format.";
+                error = "Expiry date must be in MM/YY format.";
             } else {
                 const [month, year] = value.split("/").map(Number);
                 const currentYear = new Date().getFullYear() % 100;
@@ -73,97 +83,116 @@ export default function Profile() {
                     year < currentYear ||
                     (year === currentYear && month < currentMonth)
                 ) {
-                    errorMessage = "Expiry date must be in the future.";
+                    error = "Expiry date must be in the future.";
                 }
             }
         }
 
-        setErrors((prevErrors) => ({
-            ...prevErrors,
-            [name]: errorMessage,
-        }));
+        setErrors((prev) => ({ ...prev, [name]: error }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (errors.card_number || errors.expiry_date) {
-            alert("Please correct the errors before submitting.");
+            toast.error("Please correct errors before submitting.");
             return;
         }
 
+        setSubmitting(true);
+
         try {
-            await api.patch(`/auth/profile?user_id${user?.id}`, formData);
-            alert("Profile updated successfully!");
+            await api.patch(`/auth/profile?user_id=${user?.id}`, formData);
+            toast.success("Profile updated successfully!");
         } catch (error) {
-            alert("Failed to update profile.");
+            toast.error("Failed to update profile. Try again.");
+        } finally {
+            setSubmitting(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-            <div className="max-w-2xl w-full bg-white shadow-md rounded-lg p-8">
-                <h2 className="text-3xl font-semibold text-gray-800 text-center mb-6">
-                    Edit Profile
-                </h2>
+        <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="min-h-screen bg-gray-50 py-14 px-4 sm:px-6"
+        >
+            <button
+                onClick={() => router.back()}
+                className="absolute top-4 left-4 text-gray-600 hover:text-black flex items-center"
+            >
+                <FiArrowLeft className="mr-1" />
+                Back
+            </button>
+            <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6 sm:p-8 relative">
+                {/* Back Button */}
+
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800">
+                        Edit Profile
+                    </h2>
+                    <button
+                        onClick={() => setIsEditing(!isEditing)}
+                        className="text-sm text-sky-600 hover:text-sky-700 border border-sky-200 rounded px-3 py-1 transition shadow-sm"
+                    >
+                        {isEditing ? "Cancel" : "Edit"}
+                    </button>
+                </div>
 
                 <form
                     onSubmit={handleSubmit}
-                    className="space-y-6 text-gray-500"
+                    className="space-y-6 text-gray-700"
                 >
-                    {/* Profile Info Section */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Personal Info */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-gray-600 font-medium">
-                                First Name
-                            </label>
+                            <label>First Name</label>
                             <input
                                 type="text"
                                 name="first_name"
                                 value={formData.first_name}
                                 onChange={handleChange}
-                                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400"
+                                className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400  ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                                disabled={!isEditing}
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-gray-600 font-medium">
-                                Last Name
-                            </label>
+                            <label>Last Name</label>
                             <input
                                 type="text"
                                 name="last_name"
                                 value={formData.last_name}
                                 onChange={handleChange}
-                                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400"
+                                className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400  ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                                disabled={!isEditing}
                                 required
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-gray-600 font-medium">
-                            Phone
-                        </label>
+                        <label>Phone</label>
                         <input
                             type="text"
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400"
+                            className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400  ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                            disabled={!isEditing}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-gray-600 font-medium">
-                            Gender
-                        </label>
+                        <label>Gender</label>
                         <select
                             name="gender"
                             value={formData.gender}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400"
+                            className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400  ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                            disabled={!isEditing}
                         >
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
@@ -171,42 +200,44 @@ export default function Profile() {
                         </select>
                     </div>
 
-                    {/* Profile Picture Upload */}
+                    {/* Profile Picture */}
                     <div>
-                        <label className="block text-gray-600 font-medium">
-                            Profile Picture
-                        </label>
+                        <label>Profile Picture</label>
                         <input
                             type="file"
+                            name="profile_picture"
+                            accept="image/*"
                             onChange={handleChange}
-                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400"
+                            className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400  ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                            disabled={!isEditing}
                         />
                         {formData.profile_picture && (
                             <img
                                 src={formData.profile_picture}
-                                alt="Profile"
-                                className="w-24 h-24 mt-2 rounded-full border shadow-md"
+                                alt="Profile Preview"
+                                className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400  ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
                             />
                         )}
                     </div>
 
-                    {/* Payment Section */}
+                    {/* Payment Info */}
                     <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">
                         Payment Details
                     </h3>
 
                     <div>
-                        <label className="block text-gray-600 font-medium">
-                            Card Number
-                        </label>
+                        <label>Card Number</label>
                         <input
                             type="text"
                             name="card_number"
                             value={formData.card_number}
                             onChange={handleChange}
-                            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 ${errors.card_number ? "border-red-500" : ""}`}
                             maxLength={16}
                             placeholder="1234 5678 9012 3456"
+                            className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400
+                                ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}
+                                ${errors.card_number ? "border-red-500" : ""}`}
+                            disabled={!isEditing}
                         />
                         {errors.card_number && (
                             <p className="text-red-500 text-sm mt-1">
@@ -216,16 +247,17 @@ export default function Profile() {
                     </div>
 
                     <div>
-                        <label className="block text-gray-600 font-medium">
-                            Expiry Date
-                        </label>
+                        <label>Expiry Date</label>
                         <input
                             type="text"
                             name="expiry_date"
                             value={formData.expiry_date}
                             onChange={handleChange}
-                            className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 ${errors.expiry_date ? "border-red-500" : ""}`}
                             placeholder="MM/YY"
+                            className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400
+                                    ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}
+                                ${errors.expiry_date ? "border-red-500" : ""}`}
+                            disabled={!isEditing}
                         />
                         {errors.expiry_date && (
                             <p className="text-red-500 text-sm mt-1">
@@ -235,27 +267,56 @@ export default function Profile() {
                     </div>
 
                     <div>
-                        <label className="block text-gray-600 font-medium">
-                            UPI ID
-                        </label>
+                        <label>UPI ID</label>
                         <input
                             type="text"
                             name="upi_id"
                             value={formData.upi_id}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400"
                             placeholder="yourupi@bank"
+                            className={`w-full p-2 border rounded focus:ring-2 focus:ring-sky-400  ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                            disabled={!isEditing}
                         />
                     </div>
 
-                    <button
+                    <motion.button
+                        whileTap={{ scale: 0.96 }}
                         type="submit"
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded transition w-full"
+                        disabled={submitting || !isEditing}
+                        className={`w-full flex items-center justify-center gap-2   font-medium py-3 rounded transition
+                            ${isEditing ? "focus:ring-2 focus:ring-sky-400 bg-sky-600 hover:bg-sky-700 text-white" : "bg-gray-100 text-gray-500 cursor-not-allowed"}
+                            ${
+                                submitting
+                                    ? "opacity-70 cursor-not-allowed"
+                                    : ""
+                            }`}
                     >
-                        Update Profile
-                    </button>
+                        {submitting ? (
+                            <svg
+                                className="animate-spin h-5 w-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                />
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                />
+                            </svg>
+                        ) : (
+                            "Update Profile"
+                        )}
+                    </motion.button>
                 </form>
             </div>
-        </div>
+        </motion.div>
     );
 }

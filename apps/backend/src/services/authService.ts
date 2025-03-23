@@ -6,7 +6,9 @@ const prisma = new PrismaClient();
 /**
  * Check if a user exists in Supabase Auth.
  */
-export const checkUserExists = async (email: string): Promise<boolean> => {
+export const checkUserExists = async (
+    email: string
+): Promise<{ exist: boolean; error?: string }> => {
     if (!email) {
         throw new Error("Email is required.");
     }
@@ -17,7 +19,11 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
         },
     });
 
-    return user ? true : false;
+    if (user && user.is_verified === false) {
+        return { exist: true, error: "Please verify your email." };
+    }
+
+    return user ? { exist: true } : { exist: false };
 };
 
 /**
@@ -35,7 +41,7 @@ export const signUpUser = async (
         return { error: error.message };
     }
 
-    return { user: data.user };
+    return data;
 };
 
 /**

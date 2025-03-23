@@ -10,14 +10,20 @@ const clients: SSEClient[] = [];
 
 // ✅ SSE: Subscribe to real-time flight status updates
 export const subscribeToFlightStatus = (req: Request, res: Response) => {
-    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "GET");
     res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Connection", "keep-alive");
-
+    res.flushHeaders?.();
     const clientId = `client-${Date.now()}`;
     clients.push({ id: clientId, response: res });
 
     console.log(`New SSE client connected: ${clientId}`);
+    const interval = setInterval(() => {
+        res.write(":\n\n"); // comment-style ping to keep connection alive
+    }, 15000);
 
     req.on("close", () => {
         clients.splice(

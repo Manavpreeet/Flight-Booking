@@ -7,13 +7,21 @@ import authRoutes from "./routes/authRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
 import flightRoutes from "./routes/flightRoutes";
 import flightStatusRoutes from "./routes/flightStatusRoutes";
+import airportRoutes from "./routes/airportRoutes";
 import { setupSwagger } from "./config/swagger";
 dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(
+    cors({
+        origin: "*", // your frontend URL
+        methods: ["GET", "POST"],
+        allowedHeaders: ["Content-Type"],
+        credentials: false,
+    })
+);
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
@@ -24,6 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/flights", flightRoutes);
 app.use("/api/flights/status", flightStatusRoutes);
+app.use("/api/airports", airportRoutes);
 // Root Route
 app.get("/", (req, res) => {
     res.json({ message: "Flight Booking API is running 🚀" });

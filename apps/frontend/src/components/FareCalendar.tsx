@@ -12,10 +12,12 @@ type FareData = {
 };
 
 export default function FareCalendar({
+    title,
     origin,
     destination,
     onSelectDate,
 }: {
+    title: string;
     origin: string;
     destination: string;
     onSelectDate: (date: string) => void;
@@ -77,9 +79,9 @@ export default function FareCalendar({
     };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg mx-auto">
+        <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg mx-auto text-gray-800">
             <h3 className="text-xl font-semibold text-gray-800 flex items-center">
-                📅 Cheapest Flights Calendar
+                {title}
             </h3>
 
             {loading && <p className="text-gray-500 mt-2">Fetching fares...</p>}

@@ -12,6 +12,7 @@ import {
     FaVenusMars,
 } from "react-icons/fa";
 import { AuthInput } from "@/components/AuthInput";
+import toast from "react-hot-toast";
 export default function SignUpPage() {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
@@ -23,6 +24,7 @@ export default function SignUpPage() {
     const { signUp } = useAuth();
     const router = useRouter();
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isLoading, setLoading] = useState(false);
 
     const validateForm = () => {
         let newErrors = {};
@@ -38,22 +40,33 @@ export default function SignUpPage() {
     };
 
     const handleSignUp = async (e) => {
+        setLoading(true);
+
         e.preventDefault();
         if (!validateForm()) {
             return;
         }
         try {
             await signUp(email, password, firstName, lastName, phone, gender);
+            setLoading(false);
+            toast.success(
+                "Account created successfully. Please confirm your email address"
+            );
             setIsSuccess(true);
-            setTimeout(() => router.push("/login"), 2000);
+            const pending = localStorage.getItem("pending_booking_data");
+            if (pending) {
+                router.push("/booking"); // Auto resume booking
+                return;
+            }
+            setTimeout(() => router.push("/"), 2000);
         } catch (error) {
-            console.log(error);
-            window.alert(error);
+            toast.error("Error while singing up");
+            setLoading(false);
         }
     };
 
     return (
-        <div className="relative w-full h-screen overflow-hidden flex flex-col md:flex-row">
+        <div className="relative w-full h-screen overflow-hidden flex flex-col bg-sky-300 md:flex-row">
             <motion.video
                 src="/animated-bg.mp4"
                 autoPlay
@@ -68,10 +81,13 @@ export default function SignUpPage() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -50 }}
                         transition={{ duration: 0.5 }}
-                        className="flex justify-center items-center w-full md:w-1/2 min-h-screen bg-white p-6 shadow-xl "
+                        className="flex justify-center items-center w-full md:w-1/2 min-h-screen bg-sky-300 p-6 shadow-xl "
                     >
                         <AuthCard title="Create an Account">
-                            <form className="space-y-4" onSubmit={handleSignUp}>
+                            <form
+                                className="space-y-4 "
+                                onSubmit={handleSignUp}
+                            >
                                 <AuthInput
                                     type="text"
                                     placeholder="First Name"
@@ -132,6 +148,16 @@ export default function SignUpPage() {
                                     Sign Up
                                 </button>
                             </form>
+
+                            <p className="text-center text-sm text-gray-400 mt-4">
+                                Already have an account?{" "}
+                                <a
+                                    href="/login"
+                                    className="text-blue-400 hover:text-blue-500 transition"
+                                >
+                                    Login
+                                </a>
+                            </p>
                         </AuthCard>
                     </motion.div>
                 )}

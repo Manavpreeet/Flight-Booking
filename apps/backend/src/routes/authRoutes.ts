@@ -3,6 +3,7 @@ import {
     signUpOrLogin,
     updateUserProfile,
     getUserProfile,
+    resendVerificationEmail,
 } from "../controllers/authController";
 
 const router = express.Router();
@@ -13,6 +14,7 @@ const router = express.Router();
  *   post:
  *     summary: Signup or login a user
  *     description: If the user does not exist, they are signed up. If they exist, the password is checked for login.
+ *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
@@ -64,6 +66,7 @@ router.post("/", signUpOrLogin);
  *   patch:
  *     summary: Update user profile
  *     description: Allows authenticated users to update their profile details, excluding email.
+ *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -128,13 +131,13 @@ router.post("/", signUpOrLogin);
  */
 router.patch("/profile", updateUserProfile);
 
-// Get user profile
 /**
  * @swagger
  * /api/user/profile:
  *   get:
  *     summary: Get user profile
  *     description: Fetches the profile details of the authenticated user.
+ *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -160,4 +163,23 @@ router.patch("/profile", updateUserProfile);
  */
 router.get("/profile", getUserProfile);
 
+/**
+ * @swagger
+ * /api/auth/resend-email:
+ *   get:
+ *     summary: Resend verification email
+ *     description: Resend the confirmation email on user's email.
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *     responses:
+ *       200:
+ *         description: Resend email successful sent
+ *       400:
+ *         description: Invalid request body
+ *       500:
+ *         description: Internal Server Error
+ */
+router.get("/resend-email", resendVerificationEmail);
 export default router;

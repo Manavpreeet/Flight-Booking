@@ -7,7 +7,6 @@ export default function FlightBookingSummary({
     flight,
     isConnectingFlight,
 }: FlightBookingSummaryProps) {
-    console.log(flight, "Test");
     return (
         <div className="border p-4 rounded-lg shadow-md bg-white">
             <h2 className="text-lg font-semibold">

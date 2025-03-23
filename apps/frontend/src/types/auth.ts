@@ -5,6 +5,8 @@ export interface User {
 
 export interface AuthContextProps {
     user: User | null;
+    session: any | null;
+    token: string | null;
     signUp: (
         email: string,
         password: string,
@@ -15,6 +17,7 @@ export interface AuthContextProps {
     ) => Promise<void>;
     signIn: (email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
+    loginWithToken: (token: string) => Promise<void>;
 }
 
 export interface AuthInputProps {

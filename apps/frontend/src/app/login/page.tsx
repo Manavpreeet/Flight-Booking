@@ -25,6 +25,13 @@ export default function LoginPage() {
         try {
             await signIn(email, password);
             setIsSuccess(true);
+
+            const pending = localStorage.getItem("pending_booking_data");
+            if (pending) {
+                router.push("/booking"); // Auto resume booking
+                return;
+            }
+
             setTimeout(() => router.push("/"), 2000);
         } catch (error) {
             alert(error.message);

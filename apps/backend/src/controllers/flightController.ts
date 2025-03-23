@@ -41,7 +41,7 @@ export const getFareCalendar = async (req: Request, res: Response) => {
 
 export const getFlights = async (req: Request, res: Response) => {
     try {
-        const { tripType, routes, cabinClass } = req.query;
+        const { tripType, routes, classType: cabinClass } = req.query;
 
         if (!tripType || !routes) {
             res.status(400).json({

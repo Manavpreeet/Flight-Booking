@@ -6,8 +6,50 @@ import {
 } from "../services/authService";
 import { UserCredentials } from "../types/authTypes";
 import { PrismaClient } from "@prisma/client";
+import { supabase } from "../config/supabase";
 
 const prisma = new PrismaClient();
+
+export const resendVerificationEmail = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const { email } = req.query as { email: string };
+        if (!email) {
+            res.status(400).json({ error: "Email is required." });
+            return;
+        }
+
+        const user = await prisma.public_users.findFirst({
+            where: {
+                email: email,
+            },
+        });
+
+        if (!user) {
+            res.status(400).json({ error: "User not found." });
+            return;
+        }
+
+        if (user.is_verified) {
+            res.status(400).json({ error: "User is already verified." });
+            return;
+        }
+
+        // 🔹 Send verification email
+        await supabase.auth.resend({ type: "signup", email: email });
+        res.status(200).json({
+            message: "Verification email sent successfully",
+        });
+        return;
+    } catch (e) {
+        console.error("Error resending verification email:", e);
+        res.status(500).json({ error: "Internal Server Error" });
+        return;
+    }
+};
+
 export const signUpOrLogin = async (
     req: Request,
     res: Response
@@ -22,13 +64,47 @@ export const signUpOrLogin = async (
     try {
         const userExists = await checkUserExists(email);
 
-        if (!userExists) {
-            // 🆕 User does not exist → Signup
-            const signUpResponse = await signUpUser({ email, password });
+        if (userExists.error) {
+            res.status(400).json({ error: userExists.error });
+            return;
+        }
 
+        if (!userExists.exist) {
+            const signUpResponse = await signUpUser({ email, password });
             if (signUpResponse.error) {
                 res.status(400).json({ error: signUpResponse.error });
                 return;
+            }
+
+            let createdUser = await checkUserExists(email);
+
+            if (createdUser.exist == false) {
+                await prisma.public_users.create({
+                    data: {
+                        email: email,
+                        first_name: req.body?.firstName,
+                        last_name: req.body?.lastName,
+                        gender: req.body?.gender,
+                        phone: req.body?.phone,
+                        users: {
+                            connect: {
+                                id: signUpResponse.user?.id,
+                            },
+                        },
+                    },
+                });
+            } else {
+                await prisma.public_users.update({
+                    where: {
+                        email: email,
+                    },
+                    data: {
+                        first_name: req.body?.firstName,
+                        last_name: req.body?.lastName,
+                        gender: req.body?.email,
+                        phone: req.body?.phone,
+                    },
+                });
             }
 
             res.status(201).json({
@@ -59,6 +135,7 @@ export const signUpOrLogin = async (
             userDb: userDb,
         });
     } catch (error) {
+        console.error("Error signing up or logging in:", error);
         res.status(500).json({
             error: "Internal server error. Please try again later.",
         });
@@ -67,17 +144,19 @@ export const signUpOrLogin = async (
 
 export const getUserProfile = async (req: Request, res: Response) => {
     try {
-        const userId = req.query?.user_id;
-        if (!userId) {
+        const email = req.query?.email;
+        if (!email) {
             res.status(401).json({ error: "Unauthorized" });
             return;
         }
 
         const user = await prisma.public_users.findUnique({
-            where: { id: userId as string },
+            where: { email: email as string },
         });
 
-        res.status(200).json({ user });
+        let data = await supabase.auth.getUser(req.user?.token as string);
+
+        res.status(200).json({ user, data });
     } catch (error) {
         console.error("Error fetching user profile:", error);
         res.status(500).json({ error: "Internal Server Error" });

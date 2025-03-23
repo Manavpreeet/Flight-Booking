@@ -14,20 +14,27 @@ const getDirectFlights = async (
     console.log(
         `\nFetching direct flights from ${originId} to ${destinationId} on ${date} with cabin class ${cabinClass}`
     );
+
     const flights = await prisma.flight_legs.findMany({
         where: {
             origin_airport_id: originId,
             dest_airport_id: destinationId,
             departure_time: {
-                gte: new Date(date),
-                lte: new Date(date),
+                lte: new Date(new Date(date).setUTCHours(23, 59, 59, 59)),
             },
             flights: {
                 status: "Scheduled",
             },
         },
         include: {
-            flights: true,
+            airports_flight_legs_origin_airport_idToairports: true,
+            airports_flight_legs_dest_airport_idToairports: true,
+
+            flights: {
+                include: {
+                    airlines: true,
+                },
+            },
             flight_seats: {
                 where: {
                     is_available: true,
@@ -36,7 +43,7 @@ const getDirectFlights = async (
             },
         },
     });
-    console.log(`\nFound ${flights.length} direct flights`);
+
     return flights;
 };
 
@@ -52,13 +59,20 @@ const getConnectingFlights = async (
     const firstLegs = await prisma.flight_legs.findMany({
         where: {
             origin_airport_id: originId,
+            dest_airport_id: { not: destinationId },
             departure_time: {
                 gte: new Date(date + "T00:00:00Z"),
                 lte: new Date(date + "T23:59:59Z"),
             },
         },
         include: {
-            flights: true,
+            airports_flight_legs_origin_airport_idToairports: true,
+            airports_flight_legs_dest_airport_idToairports: true,
+            flights: {
+                include: {
+                    airlines: true,
+                },
+            },
             flight_seats: {
                 where: {
                     is_available: true,
@@ -74,6 +88,7 @@ const getConnectingFlights = async (
                 gte: new Date(date + "T00:00:00Z"),
                 lte: new Date(date + "T23:59:59Z"),
             },
+            origin_airport_id: { not: originId },
             dest_airport_id: destinationId,
         },
         include: {
@@ -87,12 +102,11 @@ const getConnectingFlights = async (
         },
     });
 
-    const connectingFlights: { firstLeg: any; secondLeg: any }[] = [];
+    const connectingFlights: {}[] = [];
     for (const firstLeg of firstLegs) {
         for (const secondLeg of secondLegs) {
             connectingFlights.push({
-                firstLeg,
-                secondLeg,
+                legs: [firstLeg, secondLeg],
             });
         }
     }

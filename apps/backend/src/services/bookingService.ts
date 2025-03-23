@@ -101,10 +101,12 @@ export const bookFlight = async (
             for (const passenger of flight.passengers) {
                 await prisma.booking_passengers.create({
                     data: {
-                        booking_id: booking.id,
                         name: passenger.name,
                         age: parseInt(passenger.age),
                         passenger_type: passenger.passenger_type,
+                        bookings: {
+                            connect: { id: booking.id },
+                        },
                     },
                 });
             }
@@ -355,12 +357,21 @@ export const getBookingsHandler = async (user_id: string) => {
         const bookings = await prisma.bookings.findMany({
             where: { user_id },
             include: {
+                booking_passengers: true,
                 itineraries: {
                     include: {
                         itinerary_flights: {
                             include: {
                                 flight_legs: {
-                                    include: { flight_status_updates: true },
+                                    include: {
+                                        airports_flight_legs_dest_airport_idToairports:
+                                            true,
+                                        airports_flight_legs_origin_airport_idToairports:
+                                            true,
+                                        flights: true,
+                                        flight_seats: true,
+                                        flight_status_updates: true,
+                                    },
                                 },
                             },
                         },
@@ -372,5 +383,39 @@ export const getBookingsHandler = async (user_id: string) => {
         return bookings;
     } catch (error: any) {
         throw new Error(`Failed to fetch bookings: ${error.message}`);
+    }
+};
+
+export const getBooking = async (booking_id: string) => {
+    try {
+        const booking = await prisma.bookings.findUnique({
+            where: { id: booking_id },
+            include: {
+                booking_passengers: true,
+                itineraries: {
+                    include: {
+                        itinerary_flights: {
+                            include: {
+                                flight_legs: {
+                                    include: {
+                                        airports_flight_legs_dest_airport_idToairports:
+                                            true,
+                                        airports_flight_legs_origin_airport_idToairports:
+                                            true,
+                                        flights: true,
+                                        flight_seats: true,
+                                        flight_status_updates: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return booking;
+    } catch (error: any) {
+        throw new Error(`Failed to fetch booking: ${error.message}`);
     }
 };

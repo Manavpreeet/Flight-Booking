@@ -1,11 +1,15 @@
 import express from "express";
-import { createBooking } from "../controllers/bookingController";
+import {
+    createBooking,
+    getBookingHandler,
+} from "../controllers/bookingController";
 import { authenticateUser } from "../middleware/authMiddleware";
 import {
     cancelBooking,
     modifyBookingHandler,
     getBookings,
 } from "../controllers/bookingController";
+import { getBooking } from "../services/bookingService";
 
 const router = express.Router();
 
@@ -67,6 +71,7 @@ router.get("/", getBookings);
  *   post:
  *     summary: Book a flight
  *     description: Reserves seats, generates PNR & E-Ticket, and sends an invoice.
+ *     tags: [Bookings]
  *     requestBody:
  *       required: true
  *       content:
@@ -219,5 +224,7 @@ router.post("/cancel/:booking_id", cancelBooking);
  *         description: Internal server error
  */
 router.patch("/modify/:booking_id", modifyBookingHandler);
+
+router.get("/:booking_id", getBookingHandler);
 
 export default router;

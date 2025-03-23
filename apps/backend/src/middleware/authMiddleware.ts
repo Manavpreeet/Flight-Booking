@@ -11,7 +11,7 @@ export const authenticateUser = async (
 ): Promise<void> => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
-
+        console.log("Token:", token);
         if (!token) {
             res.status(401).json({ error: "Unauthorized: No token provided." });
             return;
@@ -26,7 +26,8 @@ export const authenticateUser = async (
             return;
         }
 
-        req.user = data.user;
+        req.user = { ...data.user, token: token };
+
         next();
     } catch (error) {
         res.status(500).json({

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { bookFlight } from "../services/bookingService";
+import { bookFlight, getBooking } from "../services/bookingService";
 import {
     cancelBookingHandler,
     modifyBooking,
@@ -96,6 +96,24 @@ export const modifyBookingHandler = async (req: Request, res: Response) => {
             new_flight_leg_id
         );
         res.json(result);
+        return;
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+        return;
+    }
+};
+
+export const getBookingHandler = async (req: Request, res: Response) => {
+    try {
+        const { booking_id } = req.params;
+
+        if (!booking_id) {
+            res.status(400).json({ error: "Booking ID is required." });
+            return;
+        }
+
+        const booking = await getBooking(booking_id);
+        res.json(booking);
         return;
     } catch (error: any) {
         res.status(500).json({ error: error.message });

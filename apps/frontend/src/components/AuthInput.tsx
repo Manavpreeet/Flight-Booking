@@ -27,7 +27,7 @@ export function AuthInput({
             <input
                 type={type}
                 placeholder={placeholder}
-                className="border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none rounded-xl w-full p-3 pl-12 text-gray-700 shadow-md transition focus:scale-105"
+                className="border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none rounded-xl w-full p-3 pl-12 text-gray-700  transition focus:scale-105"
                 value={value}
                 onChange={onChange}
                 required
