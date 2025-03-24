@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiEdit3 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { supabase } from "@/lib/supabase";
 
 export default function Profile() {
     const { user } = useAuth();
@@ -100,8 +101,17 @@ export default function Profile() {
 
         setSubmitting(true);
 
+        const profilePicUrl = await supabase.storage
+            .from("profile-pictures")
+            .upload(`${user?.id}`, formData.profile_picture);
+
+        let data = {
+            ...formData,
+            profile_picture: profilePicUrl.data?.fullPath,
+        };
+
         try {
-            await api.patch(`/auth/profile?user_id=${user?.id}`, formData);
+            await api.patch(`/auth/profile?user_id=${user?.id}`, data);
             toast.success("Profile updated successfully!");
         } catch (error) {
             toast.error("Failed to update profile. Try again.");
