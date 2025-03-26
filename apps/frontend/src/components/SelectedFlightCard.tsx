@@ -17,6 +17,7 @@ interface FlightLeg {
 }
 
 interface SelectedFlightCardProps {
+    flightNumber: number;
     isConnecting: boolean;
     selectedFlight: {
         id?: string;
@@ -27,6 +28,7 @@ interface SelectedFlightCardProps {
 }
 
 export const SelectedFlightCard: React.FC<SelectedFlightCardProps> = ({
+    flightNumber,
     isConnecting,
     selectedFlight,
 }) => {
@@ -46,66 +48,36 @@ export const SelectedFlightCard: React.FC<SelectedFlightCardProps> = ({
                 </span>
             </div>
 
-            {isConnecting ? (
-                <div className="space-y-4">
-                    {[selectedFlight.firstLeg, selectedFlight.secondLeg].map(
-                        (leg, idx) =>
-                            leg ? (
-                                <div
-                                    key={leg.id}
-                                    className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border"
-                                >
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-gray-500">
-                                            Flight #{idx + 1}
-                                        </p>
-                                        <p className="font-semibold text-gray-700">
-                                            {leg.flights.airline} —{" "}
-                                            {leg.flights.flight_number}
-                                        </p>
-                                        <p className="text-gray-600 text-sm flex items-center gap-1">
-                                            <FaPlaneDeparture className="text-green-500" />{" "}
-                                            {leg.flights.origin} at{" "}
-                                            {leg.flights.departure_time}
-                                        </p>
-                                        <p className="text-gray-600 text-sm flex items-center gap-1">
-                                            <FaPlaneArrival className="text-red-500" />{" "}
-                                            {leg.flights.destination} at{" "}
-                                            {leg.flights.arrival_time}
-                                        </p>
-                                    </div>
-                                </div>
-                            ) : null
-                    )}
-                </div>
-            ) : (
-                selectedFlight.flights && (
-                    <div className="bg-gray-50 p-4 rounded-lg border">
-                        <p className="font-semibold text-gray-700">
-                            {selectedFlight.flights.airline} —{" "}
-                            {selectedFlight.flights.flight_number}
-                        </p>
-                        <p className="text-gray-600 text-sm flex items-center gap-1">
-                            <FaPlaneDeparture className="text-green-500" />{" "}
-                            {
-                                selectedFlight
-                                    .airports_flight_legs_origin_airport_idToairports
-                                    .code
-                            }{" "}
-                            at {selectedFlight.departure_time}
-                        </p>
-                        <p className="text-gray-600 text-sm flex items-center gap-1">
-                            <FaPlaneArrival className="text-red-500" />{" "}
-                            {
-                                selectedFlight
-                                    .airports_flight_legs_dest_airport_idToairports
-                                    .code
-                            }{" "}
-                            at {selectedFlight.arrival_time}
-                        </p>
-                    </div>
-                )
-            )}
+            <div className="space-y-4">
+                {selectedFlight.map((leg, idx) =>
+                    leg ? (
+                        <div
+                            key={leg.id}
+                            className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border"
+                        >
+                            <div className="space-y-1">
+                                <p className="text-sm text-gray-500">
+                                    Flight #{flightNumber}
+                                </p>
+                                <p className="font-semibold text-gray-700">
+                                    {leg.flight.airline.name} —{" "}
+                                    {leg.flight.flight_number}
+                                </p>
+                                <p className="text-gray-600 text-sm flex items-center gap-1">
+                                    <FaPlaneDeparture className="text-green-500" />{" "}
+                                    {leg.origin_airport.code} at{" "}
+                                    {leg.departure_time}
+                                </p>
+                                <p className="text-gray-600 text-sm flex items-center gap-1">
+                                    <FaPlaneArrival className="text-red-500" />{" "}
+                                    {leg.destination_airport.code} at{" "}
+                                    {leg.arrival_time}
+                                </p>
+                            </div>
+                        </div>
+                    ) : null
+                )}
+            </div>
         </motion.div>
     );
 };

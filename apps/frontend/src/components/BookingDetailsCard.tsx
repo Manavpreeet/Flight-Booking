@@ -1,93 +1,105 @@
+// components/BookingDetailsCard.tsx
 "use client";
 
-import { useState } from "react";
-import { format } from "date-fns";
-import { motion } from "framer-motion";
-import { MdFlight, MdCancel, MdCalendarToday } from "react-icons/md";
-import { FiEdit3 } from "react-icons/fi";
-import { FaUser } from "react-icons/fa";
-import SeatClassSelector from "./SeatClassSelector";
-import DateChanger from "./DateChanger";
-import CancelButton from "./CancelButton";
+import { useMemo } from "react";
+import BookingSummaryHeader from "./BookingSummaryHeader";
+import PassengerDetails from "./PassengerDetails";
+import BoardingPassCard from "./BoardingPassCard";
+import DownloadPdfButton from "./DownloadPdfButton";
+import Link from "next/link";
 
 export default function BookingDetailsCard({ booking }: { booking: any }) {
-    const flightLeg = booking.itineraries.itinerary_flights[0].flight_legs;
-    const passenger = booking.booking_passengers[0];
-    const currentSeatClass = flightLeg.flight_seats[0].cabin_class;
+    const passengers = booking.booking_passengers;
+    const itineraryFlights = booking.itineraries.itinerary_flights;
 
-    const origin = flightLeg.airports_flight_legs_origin_airport_idToairports;
-    const dest = flightLeg.airports_flight_legs_dest_airport_idToairports;
+    // 🔍 Prepare passenger seat map per segment
+    const segmentSeats = useMemo(() => {
+        const seatMap: {
+            [segmentNumber: number]: {
+                [passengerId: string]: {
+                    seat_number: string;
+                    cabin_class: string;
+                };
+            };
+        } = {};
+
+        itineraryFlights.forEach((segment: any) => {
+            const segmentNumber = segment.segment_number;
+            const seats = segment.flight_legs.flight_seats;
+            const legSeats = {};
+
+            passengers.forEach((p: any) => {
+                const seat = seats.find((s: any) => !s.is_available); // Simplified for now
+                if (seat) {
+                    legSeats[p.id] = {
+                        seat_number: seat.seat_number,
+                        cabin_class: seat.cabin_class,
+                    };
+                }
+            });
+
+            seatMap[segmentNumber] = legSeats;
+        });
+
+        return seatMap;
+    }, [booking]);
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="max-w-2xl mx-auto bg-white shadow rounded-xl p-6 space-y-6"
-        >
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold flex items-center gap-2 text-blue-600">
-                    <MdFlight /> {origin.city} → {dest.city}
-                </h2>
-                <span className="text-sm bg-green-100 text-green-600 px-3 py-1 rounded-full">
-                    {booking.status}
-                </span>
-            </div>
-
-            <div className="text-gray-700 space-y-2">
-                <p>
-                    <strong>Airline:</strong> {flightLeg.flights.flight_number}
-                </p>
-                <p>
-                    <strong>Departure:</strong>{" "}
-                    {format(
-                        new Date(flightLeg.departure_time),
-                        "dd MMM yyyy, hh:mm a"
-                    )}
-                </p>
-                <p>
-                    <strong>Arrival:</strong>{" "}
-                    {format(
-                        new Date(flightLeg.arrival_time),
-                        "dd MMM yyyy, hh:mm a"
-                    )}
-                </p>
-                <p>
-                    <strong>Total Fare:</strong> ₹{booking.total_amount}
-                </p>
-            </div>
-
-            <div className="border-t pt-4 space-y-2">
-                <h3 className="text-md font-semibold flex items-center gap-2">
-                    <FaUser /> Passenger Details
-                </h3>
-                <div className="text-sm">
-                    <p>
-                        <strong>Name:</strong> {passenger.name}
-                    </p>
-                    <p>
-                        <strong>Age:</strong> {passenger.age}
-                    </p>
-                    <p>
-                        <strong>Type:</strong> {passenger.passenger_type}
-                    </p>
-                </div>
-            </div>
-
-            {/* 🛫 Seat Class Update */}
-            <SeatClassSelector
+        <div className="space-y-4 px-4 md:px-8 pb-12">
+            {/* Top Summary */}
+            <BookingSummaryHeader
                 bookingId={booking.id}
-                currentClass={currentSeatClass}
+                eTicketCode={booking.e_ticket_code}
+                totalAmount={booking.total_amount}
+                bookingDate={booking.booking_date}
+                status={booking.status}
             />
 
-            {/* 📅 Date Change */}
-            <DateChanger
-                bookingId={booking.id}
-                currentDate={flightLeg.departure_time}
+            {/* Passenger Info */}
+            <PassengerDetails
+                passengers={passengers}
+                segmentSeats={segmentSeats}
             />
 
-            {/* ❌ Cancel Booking */}
-            <CancelButton bookingId={booking.id} />
-        </motion.div>
+            {/* Boarding Passes */}
+            {itineraryFlights.map((segment: any) => {
+                const leg = segment.flight_legs;
+                return (
+                    <BoardingPassCard
+                        key={segment.id}
+                        segmentNumber={segment.segment_number}
+                        origin={
+                            leg.airports_flight_legs_origin_airport_idToairports
+                        }
+                        destination={
+                            leg.airports_flight_legs_dest_airport_idToairports
+                        }
+                        flightNumber={leg.flights.flight_number}
+                        airline={leg.flights.airline_id.slice(0, 6)} // ideally replace with actual airline name
+                        departure={leg.departure_time}
+                        arrival={leg.arrival_time}
+                        duration={leg.duration}
+                        layover={leg.layover_time}
+                        status={leg.flight_status_updates?.[0]?.status}
+                        passengerSeats={segmentSeats[segment.segment_number]}
+                    />
+                );
+            })}
+
+            <Link
+                href={`/print-preview/${booking.id}`}
+                className="flex items-center gap-2 px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                target="_blank"
+            >
+                Download Boarding Pass (PDF)
+            </Link>
+
+            {/* Static Ad or Info Section */}
+            <div className="mt-6 bg-gradient-to-br from-indigo-50 to-indigo-100 border rounded-xl p-4 text-sm text-gray-700">
+                ✈️ <strong>Travel Tip:</strong> Reach the airport at least 2
+                hours before departure. Carry valid ID proof. For assistance,
+                call our 24/7 helpdesk.
+            </div>
+        </div>
     );
 }

@@ -77,18 +77,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (status !== 201 || !data?.user) throw new Error("Failed to sign up");
 
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setUser(data.user);
+        const { data: profileData, status: profileStatus } = await api.get(
+            `/auth/profile?email=${email}`,
+            {
+                headers: {
+                    authorization: `Bearer ${data.session?.access_token}`,
+                },
+            }
+        );
+
+        localStorage.setItem("user", JSON.stringify(profileData));
+        setUser(profileData);
     };
 
     const signIn = async (email: string, password: string) => {
         const { data, status } = await api.post(`/auth`, { email, password });
         if (status !== 200 || !data?.user) throw new Error("Failed to sign in");
+        const { data: profileData, status: profileStatus } = await api.get(
+            `/auth/profile?email=${email}`,
+            {
+                headers: {
+                    authorization: `Bearer ${data.session?.access_token}`,
+                },
+            }
+        );
 
         localStorage.setItem("token", data.session?.access_token);
         localStorage.setItem("session", JSON.stringify(data.session));
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(profileData.user));
+        setUser(profileData);
     };
 
     const signOut = async () => {

@@ -3,15 +3,18 @@
 import { useState } from "react";
 import { FiEdit3 } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { api } from "@/lib/api";
 
 const seatOptions = ["Economy", "Premium Economy", "Business", "First"];
 
 export default function SeatClassSelector({
     bookingId,
     currentClass,
+    flightLegId,
 }: {
     bookingId: string;
     currentClass: string;
+    flightLegId: string;
 }) {
     const [selected, setSelected] = useState(currentClass);
     const [loading, setLoading] = useState(false);
@@ -21,19 +24,18 @@ export default function SeatClassSelector({
 
         setLoading(true);
         try {
-            const res = await fetch(`/api/bookings/modify/${bookingId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ seat_class: selected }),
+            const res = await api.patch(`/bookings/modify/${bookingId}`, {
+                new_seat_class: selected,
+                new_flight_leg_id: flightLegId,
             });
-            const data = await res.json();
-            if (res.ok) {
+            const data = await res.data;
+            if (res.data) {
                 toast.success("Seat class updated");
             } else {
                 toast.error(data.error || "Failed to update seat");
             }
         } catch (e) {
-            toast.error("Server error");
+            toast.error(e.message || "Failed to update seat");
         } finally {
             setLoading(false);
         }

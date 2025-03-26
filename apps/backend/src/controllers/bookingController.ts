@@ -83,9 +83,9 @@ export const modifyBookingHandler = async (req: Request, res: Response) => {
         const { booking_id } = req.params;
         const { new_seat_class, new_flight_leg_id } = req.body;
 
-        if (!booking_id || !new_seat_class) {
+        if (!booking_id) {
             res.status(400).json({
-                error: "Booking ID and new seat class are required.",
+                error: "Booking ID is required.",
             });
             return;
         }

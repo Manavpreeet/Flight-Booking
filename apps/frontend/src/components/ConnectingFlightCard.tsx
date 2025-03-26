@@ -22,7 +22,7 @@ export default function ConnectingFlightCard({
     const getTotalPrice = (flight: any) =>
         (Array.isArray(flight.legs) ? flight.legs : [flight]).reduce(
             (sum: number, leg: any) =>
-                sum + parseInt(leg.flight_seats?.[0]?.price || "0"),
+                sum + parseInt(leg.seats?.[0]?.price || "0"),
             0
         );
 
@@ -42,20 +42,18 @@ export default function ConnectingFlightCard({
             </div>
 
             {legs.map((leg, index) => {
-                const origin =
-                    leg.airports_flight_legs_origin_airport_idToairports;
-                const dest = leg.airports_flight_legs_dest_airport_idToairports;
-                const flight = leg.flights;
-                const seat = leg.flight_seats?.[0];
+                const origin = leg.origin_airport;
+                const dest = leg.destination_airport;
+                const flight = leg.flight;
+                const seat = leg.seats[0];
 
                 return (
                     <div key={leg.id}>
                         <div className="border rounded-lg p-4 bg-gray-50 space-y-2">
                             <div className="flex justify-between items-center text-sm">
                                 <div className="text-gray-700 font-semibold flex items-center gap-2">
-                                    <IoAirplaneOutline />{" "}
-                                    {flight.airlines?.name} (
-                                    {flight.flight_number})
+                                    <IoAirplaneOutline /> {flight.airline?.name}{" "}
+                                    ({flight.flight_number})
                                 </div>
                                 <div className="text-xs text-gray-500">
                                     Status: {flight.status}

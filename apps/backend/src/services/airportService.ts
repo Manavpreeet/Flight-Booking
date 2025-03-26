@@ -1,11 +1,6 @@
-import { PrismaClient, airports } from "@prisma/client";
+import { airports } from "@prisma/client";
+import prisma from "../config/db";
 
-const prisma = new PrismaClient();
-/**
- * Check if a user exists in Supabase Auth.
- */
-export const getAirports = async (): Promise<airports[]> => {
-    const airports = await prisma.airports.findMany();
-
-    return airports;
+export const getAirportsService = async (): Promise<airports[]> => {
+    return await prisma.airports.findMany();
 };

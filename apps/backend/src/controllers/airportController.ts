@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
 import { bookFlight } from "../services/bookingService";
-import { getAirports } from "../services/airportService";
+import { getAirportsService } from "../services/airportService";
 
 /**
  * Get flight bookings of the user.
  */
 
-export const getBookings = async (req: Request, res: Response) => {
+export const getAirports = async (req: Request, res: Response) => {
     try {
-        const bookings = await getAirports();
+        const bookings = await getAirportsService();
         res.json(bookings);
         return;
     } catch (error: any) {

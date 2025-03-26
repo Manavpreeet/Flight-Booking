@@ -12,25 +12,21 @@ export const SuccessTicketCard: React.FC<SuccessTicketCardProps> = ({
     flight,
     isConnecting,
 }) => {
-    let origin = isConnecting
-        ? null
-        : {
-              code: flight.airports_flight_legs_origin_airport_idToairports
-                  .code,
-              city: flight.airports_flight_legs_origin_airport_idToairports
-                  .city,
-          };
-    let destination = isConnecting
-        ? null
-        : {
-              code: flight.airports_flight_legs_dest_airport_idToairports.code,
-              city: flight.airports_flight_legs_dest_airport_idToairports.city,
-          };
+    console.log(
+        "BookingCompletion",
+        flight.segments[flight.segments.length - 1]
+    );
 
-    let departureAt = isConnecting ? null : flight.departure_time;
-    let arrivalAt = isConnecting ? null : flight.arrival_time;
-    let seatClass = isConnecting ? null : flight.flight_seats[0].cabin_class;
-    let seatNumber = "A1";
+    let origin = flight.segments[0].legs[0].origin_airport;
+    let destination =
+        flight.segments[flight.segments.length - 1].legs[
+            flight.segments[flight.segments.length - 1].legs.length - 1
+        ].destination_airport;
+
+    let departureAt = flight.segments[0].legs[0].departure_time;
+    let seatClass = flight.segments[0].legs[0].seats[0].cabin_class;
+    let seatNumber = flight.segments[0].legs[0].seats[0].seat_number;
+
     return (
         <motion.div
             initial={{ scale: 0.8, opacity: 0, y: 30 }}

@@ -8,5 +8,7 @@
         "strict": true,
         "esModuleInterop": true,
         "typeRoots": ["./src/types", "./node_modules/@types"]
-    }
+    },
+    "include": ["src/**/*"],
+    "exclude": ["tests", "**/*.test.ts", "jest.config.ts"]
 }

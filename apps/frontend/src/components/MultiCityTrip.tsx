@@ -14,10 +14,12 @@ export default function MultiCitySearch({
     airports,
     onSearch,
     isVisible,
+    seatType,
 }: {
     airports: Airport[];
     onSearch: (segments: Segment[]) => Promise<void>;
     isVisible: boolean;
+    seatType: string;
 }) {
     const today = format(new Date(), "yyyy-MM-dd");
 
@@ -104,6 +106,7 @@ export default function MultiCitySearch({
 
     const handleSearch = () => {
         if (!validate()) return;
+        console.log("Segments", segments);
         onSearch(segments);
     };
 
@@ -220,6 +223,8 @@ export default function MultiCitySearch({
                                     onDateChange={(date) =>
                                         updateSegment(index, "date", date)
                                     }
+                                    title={undefined}
+                                    seatType={seatType}
                                 />
                             </motion.div>
                         ))}

@@ -14,14 +14,7 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(
-    cors({
-        origin: "*", // your frontend URL
-        methods: ["GET", "POST"],
-        allowedHeaders: ["Content-Type"],
-        credentials: false,
-    })
-);
+app.use(cors());
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());

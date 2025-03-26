@@ -12,6 +12,7 @@ export default function RoundTripSearch({
     airports,
     onSearch,
     isVisible,
+    seatType,
 }: {
     airports: Airport[];
     onSearch: (data: {
@@ -21,6 +22,7 @@ export default function RoundTripSearch({
         returnDate: string;
     }) => void;
     isVisible: boolean;
+    seatType: string;
 }) {
     const [origin, setOrigin] = useState("");
     const [destination, setDestination] = useState("");
@@ -134,6 +136,7 @@ export default function RoundTripSearch({
                             destination={destination}
                             selectedDate={departureDate}
                             onDateChange={setDepartureDate}
+                            seatType={seatType}
                         />
 
                         {/* Return */}
@@ -144,6 +147,7 @@ export default function RoundTripSearch({
                             onDateChange={setReturnDate}
                             hiddenFromDate={new Date(departureDate)}
                             title="Return Date"
+                            seatType={seatType}
                         />
                     </div>
 

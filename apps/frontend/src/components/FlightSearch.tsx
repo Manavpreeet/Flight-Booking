@@ -10,69 +10,84 @@ import { AnimatePresence, motion } from "framer-motion";
 import MultiCitySearch from "./MultiCityTrip";
 import { useRouter } from "next/navigation";
 import { fetchWithCache } from "@/lib/cache";
+import { CabinClass, TripType } from "@/types/booking";
+import { Airport } from "@/types/airport";
+import { getAirports } from "@/api/airports/handler";
+import { getFlights } from "@/api/flights/handler";
+import {
+    FlightSearchResponse,
+    GetFlightRoute,
+    GetFlightsQuery,
+    MultiCityRoute,
+    OneWayRoute,
+    RoundCityRoute,
+} from "@/types/flight";
 
 export default function FlightSearch() {
     const router = useRouter();
 
-    const [tripType, setTripType] = useState<
-        "one-way" | "round-trip" | "multi-city"
-    >("one-way");
+    const [tripType, setTripType] = useState<TripType>("one-way");
+    const [cabinClass, setCabinClass] = useState<CabinClass>("Economy");
+    const [airports, setAirports] = useState<Airport[]>([]);
 
-    const [airports, setAirports] = useState<any[]>([]);
-
-    const [origin, setOrigin] = useState("");
-    const [destination, setDestination] = useState("");
-    const [departureDate, setDepartureDate] = useState("");
-    const [travellers, setTravellers] = useState({
+    const [travelers, setTravelers] = useState({
         adults: 1,
         children: 0,
         infants: 0,
     });
-    const [cabinClass, setCabinClass] = useState<
-        "Economy" | "Premium Economy" | "Business" | "First"
-    >("Economy");
 
     useEffect(() => {
         const fetchAirports = async () => {
-            try {
-                const res = await api.get("/airports");
-                setAirports(res.data);
-            } catch (err) {
-                console.error("Failed to load airports", err);
+            const result = await getAirports();
+
+            if (result instanceof Error) {
+                toast.error("Failed to fetch airports. Please try again.");
+                return;
             }
+            setAirports(result);
         };
 
         fetchAirports();
     }, []);
 
-    const handleSearch = async (query: string) => {
+    const handleSearch = async (query: GetFlightsQuery) => {
         const cacheKey = `flights_${query}`;
+        let stringifiedQuery = new URLSearchParams(query).toString();
 
         try {
-            const response = await fetchWithCache(cacheKey, async () => {
-                const res = await api.get(`/flights?${query}`);
-                return res.data;
-            });
-            query += `&adults=${travellers.adults}&children=${travellers.children}&infants=${travellers.infants}`;
-            if (Object.keys(response).length > 0) {
-                router.push(`/search-results?${query}`);
-            } else {
-                toast.error("No flights found.");
-            }
+            (await fetchWithCache(cacheKey, async () => {
+                const result = await getFlights(stringifiedQuery);
+
+                if (result instanceof Error) {
+                    throw result;
+                }
+                return result;
+            })) as FlightSearchResponse;
+
+            stringifiedQuery += `&adults=${travelers.adults}&children=${travelers.children}&infants=${travelers.infants}`;
+            router.push(`/search-results?${stringifiedQuery}`);
         } catch (err) {
             console.log(err);
             toast.error("Failed to fetch flights. Please try again.");
         }
     };
-    const handleRoundTripSearch = async (data: {
-        origin: string;
-        destination: string;
-        departureDate: string;
-        returnDate: string;
-    }) => {
+
+    const handleMultiCitySearch = async (segments: MultiCityRoute[]) => {
+        const query = {
+            number_of_passengers:
+                travelers.adults + travelers.children + travelers.infants,
+            trip_type: "multi-city" as TripType,
+            routes: JSON.stringify(segments),
+            cabin_class: cabinClass,
+        };
+
+        await handleSearch(query);
+    };
+
+    const handleRoundTripSearch = async (data: RoundCityRoute) => {
         const { origin, destination, departureDate, returnDate } = data;
 
-        const routeQuery = [
+        const routeQuery: GetFlightRoute[] = [
             {
                 origin,
                 destination,
@@ -85,21 +100,19 @@ export default function FlightSearch() {
             },
         ];
 
-        const query = new URLSearchParams({
-            tripType: "round-trip",
+        const query = {
+            number_of_passengers:
+                travelers.adults + travelers.children + travelers.infants,
+            trip_type: "round-trip" as TripType,
             routes: JSON.stringify(routeQuery),
-            classType: cabinClass,
-        }).toString();
+            cabin_class: cabinClass,
+        };
 
         await handleSearch(query);
     };
 
-    const handleOneWaySearch = async (data: {
-        origin: string;
-        destination: string;
-        departureDate: string;
-    }) => {
-        let routeQuery = [
+    const handleOneWaySearch = async (data: OneWayRoute) => {
+        let routeQuery: GetFlightRoute[] = [
             {
                 origin: data.origin,
                 destination: data.destination,
@@ -107,14 +120,13 @@ export default function FlightSearch() {
             },
         ];
 
-        let tripTypeQuery = tripType;
-        let tripClassQuery = cabinClass;
-
-        let query = new URLSearchParams({
-            tripType: tripTypeQuery,
+        const query = {
+            number_of_passengers:
+                travelers.adults + travelers.children + travelers.infants,
+            trip_type: "one-way" as TripType,
             routes: JSON.stringify(routeQuery),
-            classType: tripClassQuery,
-        }).toString();
+            cabin_class: cabinClass,
+        };
         handleSearch(query);
     };
 
@@ -141,8 +153,8 @@ export default function FlightSearch() {
                 }}
             />
             <TravellerClassSelector
-                travellers={travellers}
-                setTravellers={setTravellers}
+                travellers={travelers}
+                setTravellers={setTravelers}
                 cabinClass={cabinClass}
                 setCabinClass={setCabinClass}
             />
@@ -161,6 +173,7 @@ export default function FlightSearch() {
                             airports={airports}
                             onSearch={handleOneWaySearch}
                             isVisible={true}
+                            seatType={cabinClass}
                         />
                     </motion.div>
                 )}
@@ -177,6 +190,7 @@ export default function FlightSearch() {
                         <RoundTripSearch
                             airports={airports}
                             onSearch={handleRoundTripSearch}
+                            seatType={cabinClass}
                             isVisible={true}
                         />
                     </motion.div>
@@ -193,8 +207,9 @@ export default function FlightSearch() {
                     >
                         <MultiCitySearch
                             airports={airports}
-                            onSearch={handleRoundTripSearch}
+                            onSearch={handleMultiCitySearch}
                             isVisible={true}
+                            seatType={cabinClass}
                         />
                     </motion.div>
                 )}

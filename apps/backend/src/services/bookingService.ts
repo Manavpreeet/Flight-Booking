@@ -4,27 +4,17 @@ import { sendEmail } from "../utils/emailService";
 
 const prisma = new PrismaClient();
 
-/**
- * Generates a unique PNR & E-Ticket code.
- */
 const generatePNR = () =>
     "PNR-" + crypto.randomBytes(3).toString("hex").toUpperCase();
 const generateETicket = () =>
     "E-TKT-" + crypto.randomBytes(5).toString("hex").toUpperCase();
 
-/**
- * Checks seat availability and locks the seat for 5 minutes.
- */
 const reserveSeats = async (flight_leg_id: string, seat_class: string) => {
     const availableSeat = await prisma.flight_seats.findFirst({
         where: {
             flight_leg_id,
             cabin_class: seat_class,
             is_available: true,
-            OR: [
-                { reserved_until: null },
-                { reserved_until: { lt: new Date() } },
-            ],
         },
     });
 
@@ -34,16 +24,13 @@ const reserveSeats = async (flight_leg_id: string, seat_class: string) => {
         where: { id: availableSeat.id },
         data: {
             is_available: false,
-            reserved_until: new Date(Date.now() + 5 * 60 * 1000), // Lock for 5 min
+            reserved_until: new Date(Date.now() + 5 * 60 * 1000),
         },
     });
 
     return availableSeat.id;
 };
 
-/**
- * Books a flight, stores passenger details, and generates a PNR & E-Ticket.
- */
 export const bookFlight = async (
     user_id: string,
     trip_type: string,
@@ -51,13 +38,7 @@ export const bookFlight = async (
     total_amount: number
 ) => {
     try {
-        // Step 1: Create Itinerary
-        const itinerary = await prisma.itineraries.create({
-            data: {
-                user_id,
-                trip_type,
-            },
-        });
+        console.log("BookingPage", user_id as string);
 
         const userData = await prisma.public_users.findFirst({
             where: { id: user_id },
@@ -65,7 +46,14 @@ export const bookFlight = async (
 
         if (!userData) throw new Error("User not found.");
 
-        // Step 2: Reserve Seats
+        const itinerary = await prisma.itineraries.create({
+            data: {
+                users: {
+                    connect: { id: user_id },
+                },
+                trip_type,
+            },
+        });
         const reservedSeats: string[] = [];
         for (const flight of flights) {
             const seat_id = await reserveSeats(
@@ -74,44 +62,58 @@ export const bookFlight = async (
             );
             reservedSeats.push(seat_id);
 
-            // Link flight to itinerary
             await prisma.itinerary_flights.create({
                 data: {
                     itinerary_id: itinerary.id,
                     flight_leg_id: flight.flight_leg_id,
-                    segment_number: flights.indexOf(flight) + 1, // Segment order
+                    segment_number: flights.indexOf(flight) + 1,
                 },
             });
         }
 
         let e_ticket = generateETicket();
-        // Step 3: Create Booking Entry
         const booking = await prisma.bookings.create({
             data: {
                 user_id,
-                itinerary_id: itinerary.id, // ✅ Now linking booking to itinerary
+                itinerary_id: itinerary.id,
                 status: "Confirmed",
                 total_amount,
                 e_ticket_code: e_ticket,
             },
         });
 
-        // Step 4: Store Passenger Details
+        let bookingPassengerData: {
+            name: string;
+            age: number;
+            passenger_type: string;
+            booking_id: string;
+        }[] = [];
+
+        const passengerKeySet = new Set<string>();
+
         for (const flight of flights) {
             for (const passenger of flight.passengers) {
-                await prisma.booking_passengers.create({
-                    data: {
+                const key = `${passenger.name}-${passenger.age}-${passenger.passenger_type}`;
+                if (!passengerKeySet.has(key)) {
+                    passengerKeySet.add(key);
+                    bookingPassengerData.push({
                         name: passenger.name,
                         age: parseInt(passenger.age),
                         passenger_type: passenger.passenger_type,
-                        bookings: {
-                            connect: { id: booking.id },
-                        },
-                    },
-                });
+                        booking_id: booking.id,
+                    });
+                }
             }
         }
 
+        await prisma.booking_passengers.createMany({
+            data: [...bookingPassengerData].map((passenger) => ({
+                name: passenger.name,
+                age: passenger.age,
+                passenger_type: passenger.passenger_type,
+                booking_id: booking.id,
+            })),
+        });
         let pnr = generatePNR();
         const emailBody = `
         <h2>Booking Confirmation</h2>
@@ -128,7 +130,6 @@ export const bookFlight = async (
             emailBody
         );
 
-        // Step 5: Send Invoice (Mocked)
         console.log(
             `Invoice sent to user ${user_id} for booking ${booking.id}`
         );
@@ -144,12 +145,8 @@ export const bookFlight = async (
     }
 };
 
-/**
- * Cancels a flight booking.
- */
 export const cancelBookingHandler = async (booking_id: string) => {
     try {
-        // Step 1: Check if the booking exists and fetch the itinerary
         const booking = await prisma.bookings.findUnique({
             where: { id: booking_id },
             include: {
@@ -163,7 +160,6 @@ export const cancelBookingHandler = async (booking_id: string) => {
 
         if (!booking) throw new Error("Booking not found.");
 
-        // Step 2: Check if any flight in the itinerary has already departed
         for (const itineraryFlight of booking.itineraries?.itinerary_flights ||
             []) {
             if (
@@ -176,13 +172,15 @@ export const cancelBookingHandler = async (booking_id: string) => {
             }
         }
 
-        // Step 3: Update Booking Status to Cancelled
+        if (booking.status === "Cancelled") {
+            throw new Error("Booking has already been cancelled.");
+        }
+
         await prisma.bookings.update({
             where: { id: booking_id },
             data: { status: "Cancelled" },
         });
 
-        // Step 4: Release reserved seats
         await prisma.flight_seats.updateMany({
             where: {
                 flight_leg_id: {
@@ -195,7 +193,6 @@ export const cancelBookingHandler = async (booking_id: string) => {
             data: { is_available: true, reserved_until: null },
         });
 
-        // Step 5: Log cancellation in `email_notifications`
         await prisma.email_notifications.create({
             data: {
                 user_id: booking.user_id,
@@ -224,14 +221,12 @@ export const cancelBookingHandler = async (booking_id: string) => {
             emailBody
         );
 
-        // Step 6: Send cancellation confirmation email (Mocked)
         console.log(
             `Cancellation email sent to user ${booking.user_id} for booking ${booking_id}`
         );
 
         return {
             message: "Booking cancelled successfully",
-            status: "Cancelled",
         };
     } catch (error: any) {
         throw new Error(`Cancellation failed: ${error.message}`);
@@ -240,17 +235,24 @@ export const cancelBookingHandler = async (booking_id: string) => {
 
 export const modifyBooking = async (
     booking_id: string,
-    new_seat_class: string,
+    new_seat_class?: string,
     new_flight_leg_id?: string
 ) => {
     try {
-        // Step 1: Get Booking Details and linked itinerary
         const booking = await prisma.bookings.findUnique({
             where: { id: booking_id },
             include: {
                 itineraries: {
                     include: {
-                        itinerary_flights: true,
+                        itinerary_flights: {
+                            include: {
+                                flight_legs: {
+                                    include: {
+                                        flight_seats: true,
+                                    },
+                                },
+                            },
+                        },
                     },
                 },
             },
@@ -262,7 +264,6 @@ export const modifyBooking = async (
             throw new Error("Booking has already been cancelled.");
         }
 
-        // Step 2: Check if the flight has already departed
         for (const itineraryFlight of booking.itineraries?.itinerary_flights ||
             []) {
             const flightLeg = await prisma.flight_legs.findUnique({
@@ -275,22 +276,30 @@ export const modifyBooking = async (
             }
         }
 
-        // Step 3: Check for Available Seats
         const availableSeat = await prisma.flight_seats.findFirst({
             where: {
                 flight_leg_id:
                     new_flight_leg_id ||
                     booking.itineraries?.itinerary_flights[0].flight_leg_id,
-                cabin_class: new_seat_class,
+                cabin_class:
+                    new_seat_class ||
+                    booking.itineraries?.itinerary_flights[0].flight_legs
+                        .flight_seats[0].cabin_class,
                 is_available: true,
             },
         });
 
         if (!availableSeat) {
-            throw new Error(`No available seats in ${new_seat_class}.`);
+            throw new Error(
+                `No available seats in ${
+                    new_seat_class
+                        ? new_seat_class
+                        : booking.itineraries?.itinerary_flights[0].flight_legs
+                              .flight_seats[0].cabin_class
+                }.`
+            );
         }
 
-        // Step 4: Release Old Seat & Assign New One
         await prisma.flight_seats.updateMany({
             where: {
                 flight_leg_id: availableSeat.flight_leg_id,
@@ -303,13 +312,11 @@ export const modifyBooking = async (
             data: { is_available: false },
         });
 
-        // Step 5: Update Booking Details
         await prisma.bookings.update({
             where: { id: booking_id },
             data: { total_amount: availableSeat.price, status: "Modified" },
         });
 
-        // Step 6: Log Modification Email
         await prisma.email_notifications.create({
             data: {
                 user_id: booking.user_id,
@@ -338,14 +345,12 @@ export const modifyBooking = async (
             emailBody
         );
 
-        // Step 7: Send Modification Confirmation Email (Mocked)
         console.log(
             `Modification email sent to user ${booking.user_id} for booking ${booking_id}`
         );
 
         return {
             message: "Booking modified successfully",
-            new_class: new_seat_class,
         };
     } catch (error: any) {
         throw new Error(`Modification failed: ${error.message}`);

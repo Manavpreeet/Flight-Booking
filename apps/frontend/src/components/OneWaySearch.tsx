@@ -13,6 +13,7 @@ export default function OneWaySearch({
     airports,
     onSearch,
     isVisible,
+    seatType,
 }: {
     airports: Airport[];
     onSearch: (data: {
@@ -21,6 +22,7 @@ export default function OneWaySearch({
         departureDate: string;
     }) => void;
     isVisible: boolean;
+    seatType: string;
 }) {
     const [origin, setOrigin] = useState("");
     const [destination, setDestination] = useState("");
@@ -132,6 +134,7 @@ export default function OneWaySearch({
                             destination={destination}
                             selectedDate={departureDate}
                             onDateChange={setDepartureDate}
+                            seatType={seatType}
                         />
                     </div>
 

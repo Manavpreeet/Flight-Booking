@@ -3,13 +3,13 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft, FiEdit3 } from "react-icons/fi";
+import { FiArrowLeft } from "react-icons/fi";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 
 export default function Profile() {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -33,21 +33,26 @@ export default function Profile() {
     useEffect(() => {
         async function fetchUserProfile() {
             if (!user) return router.push("/signup");
-
-            const response = await api.get(`/auth/profile?email=${user.email}`);
-            const userData = response.data.user;
-
-            setFormData({
-                first_name: userData.first_name || "",
-                last_name: userData.last_name || "",
-                phone: userData.phone || "",
-                gender: userData.gender || "Other",
-                profile_picture: userData.profile_picture || "",
-                card_number: userData.card_number || "",
-                expiry_date: userData.expiry_date || "",
-                upi_id: userData.upi_id || "",
-            });
+            try {
+                const response = await api.get(
+                    `/auth/profile?email=${user.user.email}`
+                );
+                const userData = response.data.user;
+                setFormData({
+                    first_name: userData.first_name || "",
+                    last_name: userData.last_name || "",
+                    phone: userData.phone || "",
+                    gender: userData.gender || "Other",
+                    profile_picture: userData.profile_picture || "",
+                    card_number: userData.card_number || "",
+                    expiry_date: userData.expiry_date || "",
+                    upi_id: userData.upi_id || "",
+                });
+            } catch (error) {
+                toast.error("Failed to load profile.");
+            }
         }
+
         fetchUserProfile();
     }, [user, router]);
 
@@ -68,11 +73,11 @@ export default function Profile() {
     const validateInput = (name: string, value: string) => {
         let error = "";
 
-        if (name === "card_number" && !/^\d{16}$/.test(value)) {
+        if (name === "card_number" && value && !/^\d{16}$/.test(value)) {
             error = "Card number must be 16 digits.";
         }
 
-        if (name === "expiry_date") {
+        if (name === "expiry_date" && value) {
             if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) {
                 error = "Expiry date must be in MM/YY format.";
             } else {
@@ -101,17 +106,48 @@ export default function Profile() {
 
         setSubmitting(true);
 
-        const profilePicUrl = await supabase.storage
-            .from("profile-pictures")
-            .upload(`${user?.id}`, formData.profile_picture);
+        const fileInput = document.querySelector(
+            'input[name="profile_picture"]'
+        ) as HTMLInputElement;
+        const file = fileInput?.files?.[0];
 
-        let data = {
+        let uploadedUrl = formData.profile_picture;
+
+        // Only upload if it's a File and not already a URL
+        if (file) {
+            const filePath = `profile-pictures/${user?.user?.id}-${file.name}`;
+            const { data, error } = await supabase.storage
+                .from("profile-pictures")
+                .upload(filePath, file, {
+                    cacheControl: "3600",
+                    upsert: true,
+                });
+
+            if (error) {
+                toast.error("Image upload failed.");
+                setSubmitting(false);
+                return;
+            }
+
+            const {
+                data: { publicUrl },
+            } = supabase.storage
+                .from("profile-pictures")
+                .getPublicUrl(filePath);
+
+            uploadedUrl = publicUrl;
+        }
+
+        const updatedData = {
             ...formData,
-            profile_picture: profilePicUrl.data?.fullPath,
+            profile_picture: uploadedUrl,
         };
 
         try {
-            await api.patch(`/auth/profile?user_id=${user?.id}`, data);
+            await api.patch(
+                `/auth/profile?user_id=${user?.user?.id}`,
+                updatedData
+            );
             toast.success("Profile updated successfully!");
         } catch (error) {
             toast.error("Failed to update profile. Try again.");
@@ -127,18 +163,15 @@ export default function Profile() {
             transition={{ duration: 0.4 }}
             className="min-h-screen bg-gray-50 py-14 px-4 sm:px-6"
         >
-            <button
-                onClick={() => router.back()}
-                className="absolute top-4 left-4 text-gray-600 hover:text-black flex items-center"
-            >
-                <FiArrowLeft className="mr-1" />
-                Back
-            </button>
             <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6 sm:p-8 relative">
-                {/* Back Button */}
-
-                {/* Header */}
                 <div className="flex items-center justify-between mb-6">
+                    <button
+                        onClick={() => router.back()}
+                        className=" text-gray-600 hover:text-black flex items-center"
+                    >
+                        <FiArrowLeft className="mr-1" />
+                        Back
+                    </button>
                     <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800">
                         Edit Profile
                     </h2>

@@ -7,6 +7,9 @@ import { toast } from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import ChangeSeatClassModal from "@/components/ChangeSeatTypeModa";
+import ChangeDateModal from "@/components/ChangeDateModal";
+import RoundTripBookingCard from "@/components/RoundTripCard";
+import MultiCityBookingCard from "@/components/MultiCityCard";
 
 type BookingStatus = "Upcoming" | "Cancelled" | "Completed";
 
@@ -16,6 +19,7 @@ export default function MyBookingsPage() {
     const [loading, setLoading] = useState(true);
     const { user, token } = useAuth();
     const [modalOpen, setModalOpen] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState(null);
 
     const tabs: BookingStatus[] = ["Upcoming", "Cancelled", "Completed"];
 
@@ -31,7 +35,9 @@ export default function MyBookingsPage() {
     const fetchBookings = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/bookings?user_id=${user.id}`);
+            const response = await api.get(
+                `/bookings?user_id=${user.id || user.user.id}`
+            );
             setBookings(response.data);
         } catch (err) {
             toast.error("Failed to fetch bookings");
@@ -73,7 +79,7 @@ export default function MyBookingsPage() {
 
         if (activeTab === "Cancelled") return status === "Cancelled";
         if (activeTab === "Completed") return status === "Confirmed" && isPast;
-        return status === "Confirmed" && !isPast;
+        return (status === "Confirmed" || status == "Modified") && !isPast;
     };
 
     const getPassengerCount = (booking: any) =>
@@ -134,42 +140,112 @@ export default function MyBookingsPage() {
                 ) : (
                     filteredBookings.map((booking) => {
                         const info = getFlightInfo(booking);
+                        const segments =
+                            booking.itineraries?.itinerary_flights.map(
+                                (flight: any) => {
+                                    const leg = flight.flight_legs;
+                                    return {
+                                        origin: leg
+                                            .airports_flight_legs_origin_airport_idToairports
+                                            ?.city,
+                                        destination:
+                                            leg
+                                                .airports_flight_legs_dest_airport_idToairports
+                                                ?.city,
+                                        departureTime: leg.departure_time,
+                                        arrivalTime: leg.arrival_time,
+                                        airline:
+                                            leg.flights?.airline_id?.includes(
+                                                "indigo"
+                                            )
+                                                ? "IndiGo"
+                                                : "Air India",
+                                        flightNumber:
+                                            leg.flights?.flight_number,
+                                        flightLegId: leg.id,
+                                        onChangeDate: () =>
+                                            setSelectedBooking(booking),
+                                    };
+                                }
+                            );
 
+                        const passengerCount = getPassengerCount(booking);
+                        const status =
+                            booking.status === "Cancelled"
+                                ? "Cancelled"
+                                : isCompleted(info.departureTime)
+                                  ? "Completed"
+                                  : "Confirmed";
+
+                        const tripType = booking.itineraries?.trip_type;
+
+                        if (tripType === "round-trip") {
+                            return (
+                                <RoundTripBookingCard
+                                    key={booking.id}
+                                    bookingId={booking.id}
+                                    tripType="round-trip"
+                                    passengerCount={passengerCount}
+                                    status={status}
+                                    segments={segments}
+                                    onCancel={() => handleCancel(booking.id)}
+                                    onManage={() =>
+                                        (window.location.href = `/booking/${booking.id}`)
+                                    }
+                                />
+                            );
+                        }
+
+                        if (tripType === "multi-city") {
+                            return (
+                                <MultiCityBookingCard
+                                    key={booking.id}
+                                    bookingId={booking.id}
+                                    passengerCount={passengerCount}
+                                    status={status}
+                                    segments={segments}
+                                    onCancel={() => handleCancel(booking.id)}
+                                    onManage={() =>
+                                        (window.location.href = `/booking/${booking.id}`)
+                                    }
+                                />
+                            );
+                        }
+
+                        // Default fallback: One-way
                         return (
                             <BookingCard
-                                flightLegId={
-                                    booking.itineraries?.itinerary_flights[0]
-                                        ?.flight_legs.id
-                                }
                                 key={booking.id}
+                                bookingId={booking.id}
+                                flightLegId={
+                                    booking.itineraries?.itinerary_flights?.[0]
+                                        ?.flight_legs?.id
+                                }
                                 origin={info.origin}
                                 destination={info.destination}
                                 departureTime={info.departureTime}
                                 arrivalTime={info.arrivalTime}
                                 airline={info.airline}
                                 flightNumber={info.flightNumber}
-                                passengerCount={getPassengerCount(booking)}
-                                tripType={booking.itineraries?.trip_type}
-                                bookingId={booking.id}
-                                status={
-                                    booking.status === "Cancelled"
-                                        ? "Cancelled"
-                                        : isCompleted(info.departureTime)
-                                          ? "Completed"
-                                          : "Confirmed"
-                                }
+                                passengerCount={passengerCount}
+                                tripType={tripType}
+                                status={status}
                                 onCancel={() => handleCancel(booking.id)}
-                                onChangeDate={() =>
-                                    handleChangeDate(booking.id)
+                                onChangeDate={() => setSelectedBooking(booking)}
+                                onManage={() =>
+                                    (window.location.href = `/booking/${booking.id}`)
                                 }
-                                onManage={() => {
-                                    window.location.href = `/booking/${booking.id}`;
-                                }}
                             />
                         );
                     })
                 )}
             </div>
+            <ChangeDateModal
+                passengerCount={1}
+                isOpen={!!selectedBooking}
+                onClose={() => setSelectedBooking(null)}
+                booking={selectedBooking}
+            />
         </div>
     );
 }

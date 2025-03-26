@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 
 type FareMap = Record<string, number>;
 
-export function useFareCalendar(origin: string, destination: string) {
+export function useFareCalendar(
+    origin: string,
+    destination: string,
+    seatType: string
+) {
     const [fareMap, setFareMap] = useState<FareMap>({});
     const [minPrice, setMinPrice] = useState<number | null>(null);
     const [maxPrice, setMaxPrice] = useState<number | null>(null);
@@ -27,6 +31,7 @@ export function useFareCalendar(origin: string, destination: string) {
                     destination,
                     startDate,
                     endDate,
+                    seatType,
                 });
                 const res = await api.get(`/flights/fare-calendar?${params}`);
                 const data = await res.data;
@@ -56,7 +61,7 @@ export function useFareCalendar(origin: string, destination: string) {
         };
 
         fetchFareData();
-    }, [origin, destination]);
+    }, [origin, destination, seatType]);
 
     return { fareMap, minPrice, maxPrice, loading };
 }

@@ -1,42 +1,56 @@
 import express from "express";
-import { getBookings } from "../controllers/airportController";
+import { getAirports } from "../controllers/airportController";
 
 const router = express.Router();
+
+router.get("/", getAirports);
+export default router;
+
 /**
  * @swagger
- * /:
+ * tags:
+ *   name: Airports
+ *   description: Airport management and lookup
+ */
+
+/**
+ * @swagger
+ * /api/airports:
  *   get:
- *     summary: Retrieve a list of bookings
+ *     summary: Get all airports
+ *     tags: [Airports]
+ *     description: Returns a list of available airports with details.
  *     responses:
  *       200:
- *         description: A list of bookings
+ *         description: List of airports
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                     description: The booking ID
- *                     example: '12345'
- *                   flightNumber:
- *                     type: string
- *                     description: The flight number
- *                     example: 'AI-202'
- *                   departure:
- *                     type: string
- *                     description: The departure location
- *                     example: 'JFK'
- *                   arrival:
- *                     type: string
- *                     description: The arrival location
- *                     example: 'LAX'
- *                   date:
- *                     type: string
- *                     description: The date of the flight
- *                     example: '2023-10-01'
+ *                 $ref: '#/components/schemas/Airport'
  */
-router.get("/", getBookings);
-export default router;
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Airport:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *           example: 6d5951af-3214-47cf-beb4-14fea4b3d253
+ *         name:
+ *           type: string
+ *           example: Indira Gandhi International Airport
+ *         code:
+ *           type: string
+ *           example: DEL
+ *         city:
+ *           type: string
+ *           example: Delhi
+ *         country:
+ *           type: string
+ *           example: India
+ */

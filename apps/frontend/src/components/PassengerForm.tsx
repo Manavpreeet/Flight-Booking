@@ -10,23 +10,61 @@ export interface Passenger {
     passenger_type: "Adult" | "Child" | "Infant";
     is_disabled?: boolean;
 }
-
-interface PassengerFormProps {
-    passengers: Passenger[];
-    setPassengers: (p: Passenger[]) => void;
+export interface Passenger {
+    name: string;
+    age: string;
+    passenger_type: "Adult" | "Child" | "Infant";
+    is_disabled?: boolean;
+    errors?: {
+        name?: string;
+        age?: string;
+    };
 }
 
 export const PassengerForm: React.FC<PassengerFormProps> = ({
     passengers,
     setPassengers,
+    errors,
 }) => {
+    const validatePassenger = (passenger: Passenger): Passenger["errors"] => {
+        const errors: Passenger["errors"] = {};
+        const age = parseInt(passenger.age);
+
+        if (!passenger.name.trim()) {
+            errors.name = "Name is required";
+        }
+
+        if (isNaN(age)) {
+            errors.age = "Age must be a number";
+        } else {
+            switch (passenger.passenger_type) {
+                case "Adult":
+                    if (age < 12) errors.age = "Adult must be 12 or older";
+                    break;
+                case "Child":
+                    if (age < 2 || age > 11)
+                        errors.age = "Child age must be between 2 and 11";
+                    break;
+                case "Infant":
+                    if (age >= 2) errors.age = "Infant must be younger than 2";
+                    break;
+            }
+        }
+
+        return errors;
+    };
+
     const handleChange = (
         index: number,
         field: keyof Passenger,
         value: string
     ) => {
         const updated = [...passengers];
+        const errors = validatePassenger(updated[index]);
+
+        if (field == "age" && parseInt(value) < 2) return;
         updated[index][field] = value;
+        updated[index].errors = errors;
         setPassengers(updated);
     };
 
@@ -56,6 +94,11 @@ export const PassengerForm: React.FC<PassengerFormProps> = ({
                         }
                         className="border p-2 rounded-md w-full md:w-1/3"
                     />
+                    {passenger.errors?.name && (
+                        <p className="text-red-500 text-sm">
+                            {passenger.errors.name}
+                        </p>
+                    )}
                     <input
                         type="number"
                         placeholder="Age"
@@ -65,6 +108,11 @@ export const PassengerForm: React.FC<PassengerFormProps> = ({
                         }
                         className="border p-2 rounded-md w-full md:w-1/3"
                     />
+                    {passenger.errors?.age && (
+                        <p className="text-red-500 text-sm">
+                            {passenger.errors.age}
+                        </p>
+                    )}
                     <select
                         value={passenger.passenger_type}
                         disabled={passenger.is_disabled}

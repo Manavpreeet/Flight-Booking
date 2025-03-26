@@ -8,6 +8,7 @@ import "react-day-picker/dist/style.css";
 import { useFareCalendar } from "@/hooks/useFareCalendar";
 
 export default function DepartureDatePicker({
+    seatType,
     selectedDate,
     onDateChange,
     hiddenFromDate,
@@ -21,6 +22,7 @@ export default function DepartureDatePicker({
     hiddenFromDate?: Date;
     origin: string;
     destination: string;
+    seatType: string;
 }) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -30,7 +32,8 @@ export default function DepartureDatePicker({
 
     const { fareMap, minPrice, maxPrice } = useFareCalendar(
         origin,
-        destination
+        destination,
+        seatType
     );
 
     useEffect(() => {

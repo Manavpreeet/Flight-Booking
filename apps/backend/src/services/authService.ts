@@ -1,63 +1,87 @@
 import { supabase } from "../config/supabase";
 import { AuthResponse, UserCredentials } from "../types/authTypes";
 import { PrismaClient } from "@prisma/client";
-
+import logger from "../config/logger";
 const prisma = new PrismaClient();
-/**
- * Check if a user exists in Supabase Auth.
- */
+
 export const checkUserExists = async (
     email: string
 ): Promise<{ exist: boolean; error?: string }> => {
     if (!email) {
+        logger.error("checkUserExists called without email");
         throw new Error("Email is required.");
     }
 
-    const user = await prisma.public_users.findFirst({
-        where: {
-            email: email,
-        },
-    });
+    try {
+        const user = await prisma.public_users.findFirst({
+            where: {
+                email: email,
+            },
+        });
 
-    if (user && user.is_verified === false) {
-        return { exist: true, error: "Please verify your email." };
+        if (user && user.is_verified === false) {
+            logger.info(`User ${email} exists but is not verified`);
+            return { exist: true, error: "Please verify your email." };
+        }
+
+        logger.info(`User existence check completed for ${email}`);
+        return user ? { exist: true } : { exist: false };
+    } catch (error) {
+        logger.error(
+            `Error checking if user exists: ${error instanceof Error ? error.message : String(error)}`
+        );
+        throw error;
     }
-
-    return user ? { exist: true } : { exist: false };
 };
 
-/**
- * Sign up a new user in Supabase Auth.
- */
 export const signUpUser = async (
     credentials: UserCredentials
 ): Promise<AuthResponse> => {
-    const { data, error } = await supabase.auth.signUp({
-        email: credentials.email,
-        password: credentials.password,
-    });
+    try {
+        const { data, error } = await supabase.auth.signUp({
+            email: credentials.email,
+            password: credentials.password,
+        });
 
-    if (error) {
-        return { error: error.message };
+        if (error) {
+            logger.error(
+                `Signup failed for ${credentials.email}: ${error.message}`
+            );
+            return { error: error.message };
+        }
+
+        logger.info(`User signup successful for ${credentials.email}`);
+        return data;
+    } catch (error) {
+        logger.error(
+            `Unexpected error during signup: ${error instanceof Error ? error.message : String(error)}`
+        );
+        throw error;
     }
-
-    return data;
 };
 
-/**
- * Login an existing user.
- */
 export const loginUser = async (
     credentials: UserCredentials
 ): Promise<AuthResponse> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
-    });
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+        });
 
-    if (error) {
-        return { error: "Incorrect password. Please try again." };
+        if (error) {
+            logger.warn(
+                `Login failed for ${credentials.email}: ${error.message}`
+            );
+            return { error: "Incorrect password. Please try again." };
+        }
+
+        logger.info(`User login successful for ${credentials.email}`);
+        return { user: data.user, session: data.session };
+    } catch (error) {
+        logger.error(
+            `Unexpected error during login: ${error instanceof Error ? error.message : String(error)}`
+        );
+        throw error;
     }
-
-    return { user: data.user, session: data.session };
 };

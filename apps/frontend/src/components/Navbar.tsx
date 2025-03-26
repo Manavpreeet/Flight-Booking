@@ -7,18 +7,18 @@ import { FiHelpCircle, FiMenu, FiX } from "react-icons/fi";
 import { FaPlaneDeparture } from "react-icons/fa";
 
 export default function Navbar() {
-    const [user, setUser] = useState(null);
+    const { user } = useAuth();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
     const { signOut } = useAuth();
     const [loading, setLoading] = useState(true);
-
+    console.log("NavBar", user);
     useEffect(() => {
-        const storedUser = localStorage?.getItem("user");
-        if (storedUser) setUser(JSON.parse(storedUser));
-        setTimeout(() => setLoading(false), 500);
-    }, []);
+        if (user) {
+            setLoading(false);
+        }
+    }, [user]);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -92,15 +92,23 @@ export default function Navbar() {
                             onClick={() => setDropdownOpen((prev) => !prev)}
                             className="flex items-center gap-2 px-3 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
                         >
-                            {user.profile_picture ? (
+                            {user?.profile_picture ||
+                            user?.user?.profile_picture ? (
                                 <img
-                                    src={user.profile_picture}
+                                    src={
+                                        user?.profile_picture ||
+                                        user?.user?.profile_picture
+                                    }
                                     alt="Profile"
                                     className="w-8 h-8 rounded-full"
                                 />
                             ) : (
                                 <span className="text-sm text-gray-800">
-                                    {user.email[0].toUpperCase()}
+                                    {user?.user?.email
+                                        ? user.user.email[0].toUpperCase()
+                                        : user?.email
+                                          ? user.email[0].toUpperCase()
+                                          : "U"}
                                 </span>
                             )}
                         </button>

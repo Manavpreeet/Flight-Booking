@@ -11,6 +11,7 @@ export default function DirectFlightCard({
 }: any) {
     const minPrice = seats?.[0]?.price || "N/A";
 
+    console.log(flight, "DirectFlightCard");
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -21,19 +22,21 @@ export default function DirectFlightCard({
             <div className="flex justify-between items-center">
                 <div>
                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                        ✈ Flight {flight.flight_number}
+                        ✈ Flight {flight.flight_number} from{" "}
+                        {flight.origin_airport.code} to{" "}
+                        {flight.destination_airport.code}
                     </h3>
                     <p className="text-sm text-gray-600">
-                        Airline: {flight.airlines?.name || "Unknown"}
+                        Airline: {flight.flight.airline?.name || "Unknown"}
                     </p>
                     <p className="text-sm text-gray-500 flex items-center gap-1">
-                        <FiClock /> Status: {flight.status}
+                        <FiClock /> Status: {flight.flight.status}
                     </p>
                 </div>
 
                 <div className="text-right">
                     <p className="text-sm text-gray-600">
-                        Seats: {flight.available_seats}
+                        Seats: {flight.flight.available_seats}
                     </p>
                     <p className="text-green-600 font-bold mt-1">
                         Starting at ₹{minPrice}
