@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧑‍💻 Frontend – Flight Booking System
 
-## Getting Started
+This is the **Next.js-based frontend** for the Flight Booking System. It allows users to search, book, and manage flight reservations with support for one-way, round-trip, and multi-city itineraries. Designed to be offline-capable, fast, mobile-friendly, and real-time interactive.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🧱 System Design (Frontend)
+
+### 🔄 Data Flow
+
+[User] → Search Form → Input is validated and stored (React Context) → Calls Backend API or Supabase for results → Results are displayed from cache or live
+
+[Search Results Page] → Uses IndexedDB to cache results → Filtering/Sorting happens in Web Workers → UI animated with Framer Motion
+
+[Booking] → Pre-fills passenger info → Confirmation triggers API → Success popup shown + redirect to My Bookings
+
+[My Bookings] → Displays all trips (with filters) → Allows seat/date change or cancel → Exports PDF via React-to-Print
+
+---
+
+### 🎯 Responsibilities
+
+- Client-side routing for all user flows
+- Smart validation on dates, segments, fare calendar
+- IndexedDB support for offline caching
+- Web Workers for heavy sorting/filtering
+- SSE for real-time flight status
+- Framer Motion for micro animations
+- Dynamic PDF generation for bookings
+- Responsive on all screen sizes
+
+---
+
+### ⚙️ Tech Stack
+
+| Layer        | Tech                                             |
+| ------------ | ------------------------------------------------ |
+| Framework    | Next.js (App Router)                             |
+| UI           | Tailwind CSS, Framer Motion, React Icons         |
+| State        | React Context API + local hooks                  |
+| Animations   | Framer Motion                                    |
+| Offline Data | IndexedDB (via idb)                              |
+| Workers      | Web Workers for filtering/sorting large datasets |
+| Printing     | react-to-print for PDF exports                   |
+| Data Fetch   | Custom Express backend APIs + Supabase DB/Auth   |
+
+---
+
+### 🧩 Key Features
+
+- 🎫 One-way, round-trip, and multi-city flight search
+- ✨ Animated and accessible UI
+- 📆 Fare calendar with heatmap pricing
+- 🧳 Passenger + class selection
+- 🧠 Web Worker based performance filtering/sorting
+- 🔁 Real-time status updates via SSE
+- 📦 IndexedDB caching of flight results
+- 📝 PDF generation of booking details
+- ✅ Responsive design for mobile/tablet/desktop
+
+---
+
+### 🗂️ Folder Structure
+
+```
+apps/frontend/
+├── components/             # UI components (forms, cards, filters)
+│   ├── flight-search/      # Trip type tabs, date pickers, selectors
+│   ├── flight-card/        # Direct and connecting flight cards
+│   ├── filters/            # Sidebar filter widgets
+│   ├── bookings/           # My bookings, details, confirmation UI
+│   └── common/             # Buttons, skeletons, inputs, layout
+├── lib/                    # Utility functions (Web Workers, API, cache)
+├── pages/                  # App routes and pages
+├── public/                 # Static assets (images, logos)
+├── styles/                 # Tailwind base + globals
+├── tests/                  # Frontend unit/component tests
+└── README.md               # You're here
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 🛠️ Local Development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Install pnpm globally (if not already)
+npm install -g pnpm
 
-## Learn More
+# Install project dependencies
+pnpm install
 
-To learn more about Next.js, take a look at the following resources:
+# Run the app in dev mode
+pnpm run dev
+By default, the frontend will be available at:
+👉 http://localhost:3000
+🚀 Production Build
+# Build the app
+pnpm run build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Start the app in production
+pnpm run start
+```

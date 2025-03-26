@@ -1,84 +1,87 @@
-# Turborepo starter
+# ✈️ Flight Booking System
 
-This Turborepo starter is maintained by the Turborepo core team.
+A full-stack web-based flight booking platform allowing users to search, book, and manage flight reservations — with support for one-way, round-trip, and multi-city itineraries. Designed with performance, modern UX, and scalability in mind.
 
-## Using this example
+---
 
-Run the following command:
+## 🔗 Live Demo
 
-```sh
-npx create-turbo@latest
-```
+👉 [Visit the Live App](https://flight-booking-frontend-three.vercel.app)  
+🔙 Backend API deployed on [Koyeb](https://tropical-doroteya-metheme-5c0caad1.koyeb.app)
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+## 🧱 System Architecture
 
-### Apps and Packages
+![System Architecture](https://ytjwfsvqxlgwnzmvukpf.supabase.co/storage/v1/object/public/images//Screenshot%202025-03-26%20at%209.38.47%20PM.png)
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+---
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## 📦 Key Features
 
-### Utilities
+- 🔐 Authentication & User Profiles (Supabase Auth)
+- 🔍 Flight Search (One-way / Round-trip / Multi-city)
+- 📆 Fare Calendar with price heatmap
+- 💺 Booking Flow with real-time seat availability
+- ✉️ Email Notifications on Booking/Updates
+- 🔁 Modify/Cancel Booking + Real-Time Updates (SSE)
+- 🛜 Offline Search Caching (IndexedDB)
+- 🧠 Optimized Filters & Sorting (Web Workers)
+- 📃 Booking Details Page with PDF Download
+- 📊 Admin Dashboard _(in progress)_
 
-This Turborepo has some additional tools already setup for you:
+---
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+## 🧱 Tech Stack
 
-### Build
+| Layer    | Tech                                                     |
+| -------- | -------------------------------------------------------- |
+| Frontend | React, Next.js, Tailwind CSS, Framer Motion, React Icons |
+| Backend  | Express.js, Prisma, SSE, Nodemailer                      |
+| Database | Supabase (PostgreSQL)                                    |
+| Auth     | Supabase Auth                                            |
+| DevOps   | Docker, Vercel (frontend), Koyeb (backend)               |
+| Testing  | Jest, Supertest (unit + integration)                     |
+| Caching  | IndexedDB, Web Workers                                   |
 
-To build all apps and packages, run the following command:
+---
 
-```
-cd my-turborepo
-pnpm build
-```
+## 🗂️ Monorepo Structure
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm dev
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-npx turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+```txt
+.
+├── apps
+│   ├── frontend   # Next.js client app
+│   └── backend    # Express.js API with Prisma
+├── prisma         # DB schema and migrations
+├── public         # Shared assets
+├── .env           # Environment variables
+├── Dockerfile     # Monorepo-aware Docker setup
+├── docker-compose.yml
+└── README.md      # (you are here)
 
 ```
-npx turbo link
-```
 
-## Useful Links
+#
 
-Learn more about the power of Turborepo:
+# Local Development
 
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+### Install pnpm globally (if not already installed)
+
+npm install -g pnpm
+
+### Install all project dependencies
+
+pnpm install
+
+### Run all apps in development mode
+
+pnpm run dev
+
+### Build all apps using Turborepo
+
+pnpm run build
+
+### Start all apps in production mode
+
+pnpm run start
